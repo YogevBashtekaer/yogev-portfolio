@@ -1,6 +1,6 @@
 import './App.css';
 import { FaGithub, FaLinkedin, FaEnvelope, FaPhone } from "react-icons/fa";
-import { useEffect, useState, useRef } from "react";
+import { useEffect,  useRef } from "react";
 import ProjectCard from "./ProjectCard";
 
 
