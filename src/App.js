@@ -107,8 +107,8 @@ function Navbar() {
     return (
         <nav>
             <a href="#about">About</a>
-            <a href="#contact">Contact</a>
             <a href="#projects">Projects</a>
+            <a href="#contact">Contact</a>
         </nav>
     );
 }
@@ -147,10 +147,32 @@ function CursorFollower() {
 
     return <div ref={cursorRef} className="cursor-follower" />;
 }
+function FloatingDots() {
+    const dots = Array.from({ length: 30 });
+
+    return (
+        <div className="floating-dots">
+            {dots.map((_, i) => (
+                <span
+                    key={i}
+                    className="dot"
+                    style={{
+                        left: Math.random() * 100 + "vw",
+                        animationDuration: (5 + Math.random() * 10) + "s",
+                        width: (5 + Math.random() * 10) + "px",
+                        height: (5 + Math.random() * 10) + "px",
+                        backgroundColor: Math.random() > 0.8 ? "#ff9800" : "#00bcd4"
+                    }}
+                />
+            ))}
+        </div>
+    );
+}
 
 function App() {
     return (
         <div className="App">
+            <FloatingDots />
             <CursorFollower />
             <Navbar />
             <About />
