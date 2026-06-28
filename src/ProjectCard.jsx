@@ -1,5 +1,75 @@
 import { useState, useRef, useEffect } from "react";
-import { FaGithub, FaPlay } from "react-icons/fa";
+import { FaGithub, FaPlay, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+
+function ImageCarousel({ images, alt }) {
+    const [current, setCurrent] = useState(0);
+    const touchStartX = useRef(0);
+
+    const goPrev = (e) => {
+        e.stopPropagation();
+        setCurrent((i) => (i === 0 ? images.length - 1 : i - 1));
+    };
+
+    const goNext = (e) => {
+        e.stopPropagation();
+        setCurrent((i) => (i === images.length - 1 ? 0 : i + 1));
+    };
+
+    const goTo = (e, index) => {
+        e.stopPropagation();
+        setCurrent(index);
+    };
+
+    const handleTouchStart = (e) => {
+        touchStartX.current = e.touches[0].clientX;
+    };
+
+    const handleTouchEnd = (e) => {
+        const diff = touchStartX.current - e.changedTouches[0].clientX;
+        if (Math.abs(diff) < 50) return;
+        if (diff > 0) {
+            setCurrent((i) => (i === images.length - 1 ? 0 : i + 1));
+        } else {
+            setCurrent((i) => (i === 0 ? images.length - 1 : i - 1));
+        }
+    };
+
+    return (
+        <div className="carousel">
+            <div
+                className="carousel-slide"
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+            >
+                <button type="button" className="carousel-btn carousel-prev" onClick={goPrev} aria-label="Previous image">
+                    <FaChevronLeft />
+                </button>
+
+                <img
+                    src={images[current]}
+                    alt={`${alt} — ${current + 1} of ${images.length}`}
+                    className="carousel-image"
+                />
+
+                <button type="button" className="carousel-btn carousel-next" onClick={goNext} aria-label="Next image">
+                    <FaChevronRight />
+                </button>
+            </div>
+
+            <div className="carousel-dots">
+                {images.map((_, index) => (
+                    <button
+                        key={index}
+                        type="button"
+                        className={`carousel-dot ${index === current ? "active" : ""}`}
+                        onClick={(e) => goTo(e, index)}
+                        aria-label={`Go to image ${index + 1}`}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+}
 
 function ProjectCard({ project }) {
     const [modalOpen, setModalOpen] = useState(false);
@@ -8,76 +78,69 @@ function ProjectCard({ project }) {
     const smallVideoRef = useRef(null);
     const largeVideoRef = useRef(null);
 
-    // פתיחת המודאל
     const openModal = () => {
         const smallVideo = smallVideoRef.current;
         if (smallVideo) {
-            // שומרים את הנקודה שבה הסרטון הקטן נמצא כרגע
             setSavedTime(smallVideo.currentTime);
         }
         setModalOpen(true);
     };
-
 
     const closeModal = () => {
         const largeVideo = largeVideoRef.current;
         const smallVideo = smallVideoRef.current;
 
         if (largeVideo && smallVideo) {
-            // מעדכנים את הסרטון הקטן לזמן שבו המשתמש הפסיק לצפות בגדול
             smallVideo.currentTime = largeVideo.currentTime;
-            // מבטיחים שהקטן יהיה בעצירה
             smallVideo.pause();
         }
         setModalOpen(false);
     };
 
-    // סינכרון הזמן ברגע שהמודאל נפתח (בלי Play אוטומטי)
     useEffect(() => {
         if (modalOpen && largeVideoRef.current && project.video) {
             largeVideoRef.current.currentTime = savedTime;
-            // לא קוראים ל-.play(), אז הוא נשאר ב-Pause בנקודה הנכונה
         }
     }, [modalOpen, savedTime, project.video]);
 
+    useEffect(() => {
+        if (!modalOpen) return;
+        document.body.style.overflow = "hidden";
+        return () => {
+            document.body.style.overflow = "";
+        };
+    }, [modalOpen]);
+
     return (
         <>
-            {/* הכרטיס - לחיץ כולו */}
-            <div className="project-card" onClick={openModal} style={{ cursor: 'pointer' }}>
+            <div className="project-card" onClick={openModal}>
                 <h3>{project.title}</h3>
 
                 {project.video ? (
-                    <div className="video-wrapper" style={{ position: 'relative' }}>
+                    <div className="video-wrapper">
                         <video
                             ref={smallVideoRef}
                             src={project.video}
                             controls={false}
-                            width="300"
                             muted
-                            preload="metadata" // טוען רק מידע בסיסי כדי לא להכביד
-                            style={{ borderRadius: '8px', objectFit: 'cover', height: '169px', display: 'block' }}
+                            preload="metadata"
+                            className="project-media"
                         />
-                        {/* שכבה מעל הסרטון כדי להראות שהוא לחיץ ולהוסיף אייקון Play מרכזי */}
-                        <div className="video-overlay" style={{
-                            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                            display: 'flex', justifyContent: 'center', alignItems: 'center',
-                            background: 'rgba(0,0,0,0.4)', borderRadius: '8px', transition: '0.3s'
-                        }}>
-                            <FaPlay size={40} color="white" style={{ opacity: 0.8 }} />
+                        <div className="video-overlay">
+                            <FaPlay size={40} color="white" className="play-icon" />
                         </div>
                     </div>
                 ) : project.images.length > 0 ? (
-                    <img src={project.images[0]} alt={project.title} width="300" style={{ borderRadius: '8px' }} />
+                    <img src={project.images[0]} alt={project.title} className="project-media" />
                 ) : (
                     <div className="placeholder">View Project</div>
                 )}
             </div>
 
-            {/* המודאל */}
             {modalOpen && (
                 <div className="modal" onClick={closeModal}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <button className="close-button" onClick={closeModal}>✕</button>
+                        <button className="close-button" onClick={closeModal} aria-label="Close">✕</button>
 
                         <h2>{project.title}</h2>
                         <p>{project.description}</p>
@@ -86,29 +149,14 @@ function ProjectCard({ project }) {
                             <video
                                 ref={largeVideoRef}
                                 src={project.video}
-                                controls // המשתמש ילחץ Play בעצמו
-                                width="100%"
-                                style={{ maxHeight: "70vh", borderRadius: '8px', display: 'block' }}
+                                controls
+                                className="modal-video"
                             />
                         ) : project.images.length > 0 ? (
-                            <div className="modal-images" style={{ textAlign: "center" }}>
-                                {project.images.map((img, idx) => (
-                                    <img
-                                        key={idx}
-                                        src={img}
-                                        alt={project.title}
-                                        style={{
-                                            width: "45%",
-                                            margin: "15px",
-                                            borderRadius: "8px",
-                                            display: "inline-block"
-                                        }}
-                                    />
-                                ))}
-                            </div>
+                            <ImageCarousel images={project.images} alt={project.title} />
                         ) : null}
 
-                        <div style={{marginTop: "25px", textAlign: 'center'}}>
+                        <div style={{ marginTop: "25px", textAlign: "center" }}>
                             <a href={project.github} target="_blank" rel="noopener noreferrer" className="github-link">
                                 <FaGithub /> View Code on GitHub
                             </a>

@@ -1,6 +1,6 @@
 import './App.css';
 import { FaGithub, FaLinkedin, FaEnvelope, FaPhone } from "react-icons/fa";
-import { useEffect,  useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import ProjectCard from "./ProjectCard";
 
 
@@ -45,7 +45,7 @@ const projectList = [
 
 function About() {
     return (
-        <section id="about" style={{  paddingTop: "45px", textAlign: "center" }}>
+        <section id="about" className="section">
             <h1>About Me</h1>
             <p>Hi, I’m Yogev, a Computer Science graduate. Highly motivated, quick learner, and passionate about building impactful projects.<br />
                 Currently seeking my first professional role in software development where I can contribute, learn, and grow.</p>
@@ -55,13 +55,13 @@ function About() {
 
 function Contact() {
     return (
-        <section id="contact" style={{  textAlign: "center", paddingTop: "25px" }}>
+        <section id="contact" className="section">
             <h1>Contact</h1>
             <h2>Excited to start my career — open to opportunities for junior developers.<br />
                 Let’s create something together!</h2>
             <div className="contact-container">
 
-                <a href="mailto:yogev7854@gmail.com" >
+                <a href="https://mail.google.com/mail/?view=cm&fs=1&to=yogev7854@gmail.com" target="_blank" rel="noopener noreferrer">
                     <FaEnvelope size={25} />
                     yogev7854@gmail.com
                 </a>
@@ -88,37 +88,76 @@ function Contact() {
 
 function Projects(){
     return(
-        <section id="projects" style={{ paddingTop: "45px", textAlign: "center" }}>
-            <div>
-                <h1>Projects</h1>
-                <div className="projects-grid">
-                    {projectList.map((proj) => (
-                        <ProjectCard key={proj.id} project={proj} />
-                    ))}
-                </div>
+        <section id="projects" className="section">
+            <h1>Projects</h1>
+            <div className="projects-grid">
+                {projectList.map((proj) => (
+                    <ProjectCard key={proj.id} project={proj} />
+                ))}
             </div>
-
         </section>
     )
 }
 
 
+const NAV_SECTIONS = ["about", "projects", "contact"];
+
 function Navbar() {
+    const [activeSection, setActiveSection] = useState("about");
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const offset = 120;
+            let current = NAV_SECTIONS[0];
+
+            for (const id of NAV_SECTIONS) {
+                const section = document.getElementById(id);
+                if (section && section.offsetTop <= window.scrollY + offset) {
+                    current = id;
+                }
+            }
+
+            setActiveSection(current);
+        };
+
+        handleScroll();
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
     return (
         <nav>
-            <a href="#about">About</a>
-            <a href="#projects">Projects</a>
-            <a href="#contact">Contact</a>
+            {NAV_SECTIONS.map((id) => (
+                <a
+                    key={id}
+                    href={`#${id}`}
+                    className={activeSection === id ? "active" : ""}
+                >
+                    {id.charAt(0).toUpperCase() + id.slice(1)}
+                </a>
+            ))}
         </nav>
     );
 }
 
-function CursorFollower() {
+function MouseEffects() {
     const cursorRef = useRef(null);
+    const glowRef = useRef(null);
     const mouse = useRef({ x: 0, y: 0 });
     const pos = useRef({ x: 0, y: 0 });
+    const [enabled, setEnabled] = useState(false);
 
     useEffect(() => {
+        const media = window.matchMedia("(hover: hover) and (pointer: fine)");
+        setEnabled(media.matches);
+        const handler = (e) => setEnabled(e.matches);
+        media.addEventListener("change", handler);
+        return () => media.removeEventListener("change", handler);
+    }, []);
+
+    useEffect(() => {
+        if (!enabled) return;
+
         const handleMouseMove = (e) => {
             mouse.current.x = e.clientX;
             mouse.current.y = e.clientY;
@@ -126,29 +165,55 @@ function CursorFollower() {
 
         window.addEventListener("mousemove", handleMouseMove);
 
+        let frameId;
         const animate = () => {
-            // מהירות עקיבה – ככל שהערך קטן יותר, הנקודה יותר איטית ומעוקבת חלק
-            const speed = 0.15;
+            const speed = 0.12;
 
             pos.current.x += (mouse.current.x - pos.current.x) * speed;
             pos.current.y += (mouse.current.y - pos.current.y) * speed;
 
+            const transform = `translate3d(${pos.current.x}px, ${pos.current.y}px, 0) translate(-50%, -50%)`;
+
             if (cursorRef.current) {
-                cursorRef.current.style.transform = `translate3d(${pos.current.x}px, ${pos.current.y}px, 0)`;
+                cursorRef.current.style.transform = transform;
+            }
+            if (glowRef.current) {
+                glowRef.current.style.transform = transform;
             }
 
-            requestAnimationFrame(animate);
+            frameId = requestAnimationFrame(animate);
         };
 
-        animate();
+        frameId = requestAnimationFrame(animate);
 
-        return () => window.removeEventListener("mousemove", handleMouseMove);
-    }, []);
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            cancelAnimationFrame(frameId);
+        };
+    }, [enabled]);
 
-    return <div ref={cursorRef} className="cursor-follower" />;
+    if (!enabled) return null;
+
+    return (
+        <>
+            <div ref={glowRef} className="mouse-glow" aria-hidden="true" />
+            <div ref={cursorRef} className="cursor-follower" aria-hidden="true" />
+        </>
+    );
 }
 function FloatingDots() {
-    const dots = Array.from({ length: 30 });
+    const [dotCount, setDotCount] = useState(18);
+
+    useEffect(() => {
+        const updateCount = () => {
+            setDotCount(window.innerWidth <= 640 ? 8 : 18);
+        };
+        updateCount();
+        window.addEventListener("resize", updateCount);
+        return () => window.removeEventListener("resize", updateCount);
+    }, []);
+
+    const dots = Array.from({ length: dotCount });
 
     return (
         <div className="floating-dots">
@@ -173,7 +238,7 @@ function App() {
     return (
         <div className="App">
             <FloatingDots />
-            <CursorFollower />
+            <MouseEffects />
             <Navbar />
             <About />
             <Projects />
