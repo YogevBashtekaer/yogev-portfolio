@@ -1,6 +1,6 @@
 import './App.css';
 import { FaGithub, FaLinkedin, FaEnvelope, FaPhone } from "react-icons/fa";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ProjectCard from "./ProjectCard";
 
 
@@ -140,12 +140,38 @@ function Navbar() {
     );
 }
 
-function MouseEffects() {
+const CURSOR_RADIUS = 12;
+const POP_DURATION = 0.35;
+
+function createDot(id, width, height) {
+    const radius = 2.5 + Math.random() * 5;
+    return {
+        id,
+        x: Math.random() * width,
+        y: Math.random() * height,
+        radius,
+        speed: 40 + Math.random() * 70,
+        color: Math.random() > 0.8 ? "#ff9800" : "#00bcd4",
+        popTimer: 0,
+    };
+}
+
+function respawnDot(dot, width, height) {
+    dot.x = Math.random() * width;
+    dot.y = height + dot.radius;
+    dot.popTimer = 0;
+}
+
+function BackgroundGame() {
     const cursorRef = useRef(null);
     const glowRef = useRef(null);
+    const dotElementsRef = useRef([]);
+    const dotsRef = useRef([]);
     const mouse = useRef({ x: 0, y: 0 });
     const pos = useRef({ x: 0, y: 0 });
     const [enabled, setEnabled] = useState(false);
+    const [score, setScore] = useState(0);
+    const [dotCount, setDotCount] = useState(18);
 
     useEffect(() => {
         const media = window.matchMedia("(hover: hover) and (pointer: fine)");
@@ -155,31 +181,93 @@ function MouseEffects() {
         return () => media.removeEventListener("change", handler);
     }, []);
 
-    useEffect(() => {
-        if (!enabled) return;
+    const initialDots = useMemo(
+        () => Array.from({ length: dotCount }, (_, i) =>
+            createDot(i, window.innerWidth, window.innerHeight)
+        ),
+        [dotCount]
+    );
 
+    useEffect(() => {
+        dotsRef.current = initialDots.map((d) => ({ ...d }));
+    }, [initialDots]);
+
+    useEffect(() => {
+        const updateCount = () => {
+            setDotCount(window.innerWidth <= 640 ? 8 : 18);
+        };
+        updateCount();
+        window.addEventListener("resize", updateCount);
+        return () => window.removeEventListener("resize", updateCount);
+    }, []);
+
+    useEffect(() => {
         const handleMouseMove = (e) => {
             mouse.current.x = e.clientX;
             mouse.current.y = e.clientY;
         };
 
-        window.addEventListener("mousemove", handleMouseMove);
+        if (enabled) {
+            window.addEventListener("mousemove", handleMouseMove);
+        }
 
         let frameId;
-        const animate = () => {
-            const speed = 0.12;
+        let lastTime = performance.now();
 
-            pos.current.x += (mouse.current.x - pos.current.x) * speed;
-            pos.current.y += (mouse.current.y - pos.current.y) * speed;
+        const animate = (time) => {
+            const dt = Math.min((time - lastTime) / 1000, 0.05);
+            lastTime = time;
 
-            const transform = `translate3d(${pos.current.x}px, ${pos.current.y}px, 0) translate(-50%, -50%)`;
+            if (enabled) {
+                const followSpeed = 0.12;
+                pos.current.x += (mouse.current.x - pos.current.x) * followSpeed;
+                pos.current.y += (mouse.current.y - pos.current.y) * followSpeed;
 
-            if (cursorRef.current) {
-                cursorRef.current.style.transform = transform;
+                const cursorTransform = `translate3d(${pos.current.x}px, ${pos.current.y}px, 0) translate(-50%, -50%)`;
+                if (cursorRef.current) cursorRef.current.style.transform = cursorTransform;
+                if (glowRef.current) glowRef.current.style.transform = cursorTransform;
             }
-            if (glowRef.current) {
-                glowRef.current.style.transform = transform;
-            }
+
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+
+            dotsRef.current.forEach((dot, i) => {
+                const el = dotElementsRef.current[i];
+                if (!el) return;
+
+                if (dot.popTimer > 0) {
+                    dot.popTimer -= dt;
+                    const progress = 1 - dot.popTimer / POP_DURATION;
+                    const scale = 1 + progress * 2.5;
+                    const opacity = Math.max(0, 1 - progress);
+                    el.style.transform = `translate(${dot.x}px, ${dot.y}px) translate(-50%, -50%) scale(${scale})`;
+                    el.style.opacity = opacity;
+
+                    if (dot.popTimer <= 0) {
+                        respawnDot(dot, w, h);
+                        el.style.opacity = 0.35;
+                    }
+                    return;
+                }
+
+                dot.y -= dot.speed * dt;
+                if (dot.y < -dot.radius) {
+                    respawnDot(dot, w, h);
+                }
+
+                if (enabled) {
+                    const dx = pos.current.x - dot.x;
+                    const dy = pos.current.y - dot.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist < CURSOR_RADIUS + dot.radius) {
+                        dot.popTimer = POP_DURATION;
+                        setScore((s) => s + 1);
+                    }
+                }
+
+                el.style.transform = `translate(${dot.x}px, ${dot.y}px) translate(-50%, -50%)`;
+                el.style.opacity = 0.35;
+            });
 
             frameId = requestAnimationFrame(animate);
         };
@@ -192,53 +280,37 @@ function MouseEffects() {
         };
     }, [enabled]);
 
-    if (!enabled) return null;
-
     return (
         <>
-            <div ref={glowRef} className="mouse-glow" aria-hidden="true" />
-            <div ref={cursorRef} className="cursor-follower" aria-hidden="true" />
+            <div className="floating-dots" aria-hidden="true">
+                {initialDots.map((dot, i) => (
+                    <span
+                        key={dot.id}
+                        ref={(el) => { dotElementsRef.current[i] = el; }}
+                        className="dot"
+                        style={{
+                            width: dot.radius * 2 + "px",
+                            height: dot.radius * 2 + "px",
+                            backgroundColor: dot.color,
+                        }}
+                    />
+                ))}
+            </div>
+            {enabled && (
+                <>
+                    <div ref={glowRef} className="mouse-glow" aria-hidden="true" />
+                    <div ref={cursorRef} className="cursor-follower" aria-hidden="true" />
+                    <div className="dot-score" aria-live="polite">{score}</div>
+                </>
+            )}
         </>
-    );
-}
-function FloatingDots() {
-    const [dotCount, setDotCount] = useState(18);
-
-    useEffect(() => {
-        const updateCount = () => {
-            setDotCount(window.innerWidth <= 640 ? 8 : 18);
-        };
-        updateCount();
-        window.addEventListener("resize", updateCount);
-        return () => window.removeEventListener("resize", updateCount);
-    }, []);
-
-    const dots = Array.from({ length: dotCount });
-
-    return (
-        <div className="floating-dots">
-            {dots.map((_, i) => (
-                <span
-                    key={i}
-                    className="dot"
-                    style={{
-                        left: Math.random() * 100 + "vw",
-                        animationDuration: (5 + Math.random() * 10) + "s",
-                        width: (5 + Math.random() * 10) + "px",
-                        height: (5 + Math.random() * 10) + "px",
-                        backgroundColor: Math.random() > 0.8 ? "#ff9800" : "#00bcd4"
-                    }}
-                />
-            ))}
-        </div>
     );
 }
 
 function App() {
     return (
         <div className="App">
-            <FloatingDots />
-            <MouseEffects />
+            <BackgroundGame />
             <Navbar />
             <About />
             <Projects />

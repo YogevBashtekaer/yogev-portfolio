@@ -490,23 +490,28 @@ section#about p {
 }
 
 .dot {
-  position: absolute;
-  bottom: -20px;
+  position: fixed;
+  top: 0;
+  left: 0;
   background-color: #00bcd4;
   border-radius: 50%;
   opacity: 0.35;
-  animation: floatUp linear infinite;
+  will-change: transform, opacity;
+  pointer-events: none;
 }
 
-@keyframes floatUp {
-  from {
-    transform: translateY(0);
-    opacity: 0.35;
-  }
-  to {
-    transform: translateY(-110vh);
-    opacity: 0;
-  }
+.dot-score {
+  position: fixed;
+  top: 72px;
+  right: 20px;
+  z-index: 999;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ff9800;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  opacity: 0.85;
+  text-shadow: 0 0 12px rgba(255, 152, 0, 0.4);
 }
 
 /* Mobile */
