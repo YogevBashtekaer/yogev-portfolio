@@ -43,12 +43,32 @@ const projectList = [
     },
 ];
 
+const skillGroups = [
+    { title: "Languages", items: ["Java", "JavaScript", "C", "C++", "Python", "SQL"] },
+    { title: "Web & Frameworks", items: ["React", "Node.js"] },
+    { title: "Cloud & Tools", items: ["GCP", "Cloudflare", "GitHub", "Cursor"] },
+    { title: "Concepts", items: ["OOP", "REST APIs"] },
+];
+
 function About() {
     return (
         <section id="about" className="section">
             <h1>About Me</h1>
-            <p>Hi, I’m Yogev, a Computer Science graduate. Highly motivated, quick learner, and passionate about building impactful projects.<br />
-                Currently seeking my first professional role in software development where I can contribute, learn, and grow.</p>
+            <p>Hi, I’m Yogev. A Computer Science graduate and Software Developer focused on
+                building high-performance web applications and backend systems. I love
+                turning complex ideas into clean, functional code.</p>
+            <div className="skills">
+                {skillGroups.map((group) => (
+                    <div key={group.title} className="skill-group">
+                        <h3>{group.title}</h3>
+                        <div className="skill-pills">
+                            {group.items.map((skill) => (
+                                <span key={skill} className="skill-pill">{skill}</span>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
         </section>
     );
 }
@@ -104,9 +124,12 @@ const NAV_SECTIONS = ["about", "projects", "contact"];
 
 function Navbar() {
     const [activeSection, setActiveSection] = useState("about");
+    const [scrolled, setScrolled] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => {
+            setScrolled(window.scrollY > 40);
+
             const offset = 120;
             let current = NAV_SECTIONS[0];
 
@@ -126,7 +149,7 @@ function Navbar() {
     }, []);
 
     return (
-        <nav>
+        <nav className={scrolled ? "scrolled" : ""}>
             {NAV_SECTIONS.map((id) => (
                 <a
                     key={id}
@@ -307,10 +330,123 @@ function BackgroundGame() {
     );
 }
 
+const CODE_SNIPPETS = [
+    "const score = 0;",
+    "useEffect(() => {",
+    "git push origin main",
+    "return <App />;",
+    "class Player {",
+    "if (enabled) {",
+    "map((proj) =>",
+    "export default App;",
+    "setScore(s => s + 1)",
+    "npm start",
+    "new Thread()",
+    "SELECT * FROM users",
+    "async fetchData()",
+    "pointer-events: none",
+    "requestAnimationFrame",
+    "npm run build",
+];
+
+const CONTENT_WIDTH = 900;
+const MIN_GUTTER = 150;
+const MAX_CODE_LINES = 2;
+
+function FloatingCode() {
+    const [enabled, setEnabled] = useState(false);
+    const [lines, setLines] = useState([]);
+    const nextId = useRef(0);
+
+    useEffect(() => {
+        const desktop = window.matchMedia("(hover: hover) and (pointer: fine)");
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+        const update = () => {
+            const gutter = (window.innerWidth - CONTENT_WIDTH) / 2;
+            setEnabled(desktop.matches && !reduceMotion.matches && gutter >= MIN_GUTTER);
+        };
+
+        update();
+        desktop.addEventListener("change", update);
+        reduceMotion.addEventListener("change", update);
+        window.addEventListener("resize", update);
+        return () => {
+            desktop.removeEventListener("change", update);
+            reduceMotion.removeEventListener("change", update);
+            window.removeEventListener("resize", update);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!enabled) {
+            setLines([]);
+            return;
+        }
+
+        let cancelled = false;
+        let timeoutId;
+
+        const spawn = () => {
+            if (cancelled) return;
+            setLines((prev) => {
+                if (prev.length >= MAX_CODE_LINES) return prev;
+                return [
+                    ...prev,
+                    {
+                        id: nextId.current++,
+                        text: CODE_SNIPPETS[Math.floor(Math.random() * CODE_SNIPPETS.length)],
+                        side: Math.random() > 0.5 ? "left" : "right",
+                        top: 18 + Math.random() * 64,
+                        duration: 7 + Math.random() * 4,
+                        color: Math.random() > 0.78 ? "#ff9800" : "#00bcd4",
+                    },
+                ];
+            });
+        };
+
+        const loop = () => {
+            spawn();
+            timeoutId = setTimeout(loop, 4500 + Math.random() * 4500);
+        };
+
+        timeoutId = setTimeout(loop, 1800);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timeoutId);
+        };
+    }, [enabled]);
+
+    if (!enabled) return null;
+
+    return (
+        <div className="code-drift" aria-hidden="true">
+            {lines.map((line) => (
+                <span
+                    key={line.id}
+                    className={`code-line from-${line.side}`}
+                    style={{
+                        top: `${line.top}vh`,
+                        color: line.color,
+                        animationDuration: `${line.duration}s`,
+                    }}
+                    onAnimationEnd={() => {
+                        setLines((prev) => prev.filter((item) => item.id !== line.id));
+                    }}
+                >
+                    {line.text}
+                </span>
+            ))}
+        </div>
+    );
+}
+
 function App() {
     return (
         <div className="App">
             <BackgroundGame />
+            <FloatingCode />
             <Navbar />
             <About />
             <Projects />

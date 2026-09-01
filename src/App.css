@@ -9,6 +9,11 @@ html, body, #root {
   margin: 0;
 }
 
+html {
+  overflow-x: hidden;
+  scroll-padding-top: 70px;
+}
+
 body {
   background-color: #000;
   background-image:
@@ -19,8 +24,47 @@ body {
   scroll-behavior: smooth;
 }
 
-html {
-  scroll-padding-top: 70px;
+html,
+body,
+.modal-content {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+html:hover,
+body:hover,
+.modal-content:hover {
+  scrollbar-color: rgba(0, 188, 212, 0.45) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+
+html:hover::-webkit-scrollbar-thumb,
+body:hover::-webkit-scrollbar-thumb,
+.modal-content:hover::-webkit-scrollbar-thumb {
+  background: rgba(0, 188, 212, 0.4);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 152, 0, 0.55);
 }
 
 /* Typography */
@@ -60,15 +104,43 @@ p {
 nav {
   position: fixed;
   top: 0;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   width: 100%;
+  box-sizing: border-box;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(0, 188, 212, 0.2);
+  border-radius: 0;
   padding: 16px 20px;
   text-align: center;
   z-index: 1000;
+  white-space: nowrap;
+  transition:
+    top 0.4s ease,
+    width 0.4s ease,
+    padding 0.4s ease,
+    border-radius 0.4s ease,
+    box-shadow 0.4s ease,
+    opacity 0.25s ease,
+    visibility 0.25s ease;
+}
+
+body.modal-open nav {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+nav.scrolled {
+  top: 14px;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 10px 28px;
+  border-radius: 999px;
+  border-bottom-color: rgba(0, 188, 212, 0.25);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
 }
 
 nav a {
@@ -103,6 +175,10 @@ nav a.active {
   margin: 0 auto;
 }
 
+section#about {
+  font-family: 'Oxanium', 'Space Grotesk', sans-serif;
+}
+
 section#about,
 section#projects,
 section#contact {
@@ -111,6 +187,91 @@ section#contact {
 
 section#about p {
   font-size: 1.05rem;
+}
+
+.skills {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 40px;
+  text-align: left;
+}
+
+.skill-group {
+  padding: 18px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 188, 212, 0.15);
+  background: rgba(13, 13, 13, 0.8);
+  position: relative;
+  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+}
+
+.skill-group h3 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ff9800;
+  margin: 0 0 14px;
+}
+
+.skill-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skill-pill {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 188, 212, 0.25);
+  background: rgba(0, 188, 212, 0.08);
+  color: #e0e0e0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: border-color 0.25s, background 0.25s, color 0.25s;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .skill-group:hover {
+    transform: translateY(-4px) scale(1.04);
+    box-shadow: 0 8px 24px rgba(0, 188, 212, 0.15);
+    border-color: rgba(0, 188, 212, 0.4);
+    z-index: 1;
+  }
+
+  .skill-group:hover .skill-pill {
+    border-color: rgba(0, 188, 212, 0.45);
+    background: rgba(0, 188, 212, 0.16);
+    color: #ffffff;
+  }
+}
+
+.skill-group h3 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ff9800;
+  margin: 0 0 14px;
+}
+
+.skill-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skill-pill {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 188, 212, 0.25);
+  background: rgba(0, 188, 212, 0.08);
+  color: #e0e0e0;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 /* Contact */
@@ -308,7 +469,8 @@ section#about p {
   max-width: 800px;
   width: 100%;
   max-height: 90vh;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   color: #e0e0e0;
   animation: modalSlideIn 0.25s ease;
 }
@@ -514,6 +676,95 @@ section#about p {
   text-shadow: 0 0 12px rgba(255, 152, 0, 0.4);
 }
 
+body.modal-open .dot-score {
+  opacity: 0;
+}
+
+/* Drifting code — desktop gutters only */
+.code-drift {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.code-line {
+  position: fixed;
+  font-family: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0;
+  filter: blur(0.25px);
+  text-shadow: 0 0 10px currentColor;
+  will-change: transform, opacity;
+  max-width: calc((100vw - 940px) / 2);
+  overflow: hidden;
+}
+
+.code-line.from-left {
+  left: 18px;
+  animation-name: codeDriftFromLeft;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+.code-line.from-right {
+  right: 18px;
+  animation-name: codeDriftFromRight;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+@keyframes codeDriftFromLeft {
+  0% {
+    transform: translateX(-120%) translateY(0);
+    opacity: 0;
+  }
+  16% {
+    opacity: 0.14;
+  }
+  72% {
+    opacity: 0.12;
+  }
+  100% {
+    transform: translateX(14px) translateY(-16px);
+    opacity: 0;
+  }
+}
+
+@keyframes codeDriftFromRight {
+  0% {
+    transform: translateX(120%) translateY(0);
+    opacity: 0;
+  }
+  16% {
+    opacity: 0.14;
+  }
+  72% {
+    opacity: 0.12;
+  }
+  100% {
+    transform: translateX(-14px) translateY(-16px);
+    opacity: 0;
+  }
+}
+
+body.modal-open .code-drift {
+  opacity: 0;
+  visibility: hidden;
+}
+
+@media (max-width: 1179px), (hover: none), (prefers-reduced-motion: reduce) {
+  .code-drift {
+    display: none;
+  }
+}
+
 /* Mobile */
 @media (max-width: 640px) {
   html {
@@ -533,6 +784,12 @@ section#about p {
     padding: 12px 10px;
   }
 
+  nav.scrolled {
+    top: 10px;
+    max-width: calc(100% - 20px);
+    padding: 8px 16px;
+  }
+
   nav a {
     margin: 0 10px;
     font-size: 0.9rem;
@@ -547,6 +804,10 @@ section#about p {
   .projects-grid {
     grid-template-columns: 1fr;
     gap: 20px;
+  }
+
+  .skills {
+    grid-template-columns: 1fr;
   }
 
   .contact-container {

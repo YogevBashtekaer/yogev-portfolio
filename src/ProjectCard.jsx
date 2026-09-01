@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { FaGithub, FaPlay, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 function ImageCarousel({ images, alt }) {
@@ -105,9 +106,32 @@ function ProjectCard({ project }) {
 
     useEffect(() => {
         if (!modalOpen) return;
-        document.body.style.overflow = "hidden";
+
+        const scrollY = window.scrollY;
+        const { body, documentElement } = document;
+
+        body.classList.add("modal-open");
+        body.style.position = "fixed";
+        body.style.top = `-${scrollY}px`;
+        body.style.left = "0";
+        body.style.right = "0";
+        body.style.overflow = "hidden";
+        documentElement.style.overflow = "hidden";
+
         return () => {
-            document.body.style.overflow = "";
+            body.classList.remove("modal-open");
+            body.style.position = "";
+            body.style.top = "";
+            body.style.left = "";
+            body.style.right = "";
+            body.style.overflow = "";
+            documentElement.style.overflow = "";
+
+            const restore = () => {
+                window.scrollTo({ top: scrollY, left: 0, behavior: "instant" });
+            };
+            restore();
+            requestAnimationFrame(restore);
         };
     }, [modalOpen]);
 
@@ -137,7 +161,7 @@ function ProjectCard({ project }) {
                 )}
             </div>
 
-            {modalOpen && (
+            {modalOpen && createPortal(
                 <div className="modal" onClick={closeModal}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <button className="close-button" onClick={closeModal} aria-label="Close">✕</button>
@@ -162,7 +186,8 @@ function ProjectCard({ project }) {
                             </a>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );
